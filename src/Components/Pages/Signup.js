@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { DarkModeContext } from "../context/DarkModeContext";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
+
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +14,7 @@ const SignUp = () => {
     confirmPassword: "",
   });
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
   const { darkMode } = useContext(DarkModeContext);
 
@@ -24,13 +27,28 @@ const SignUp = () => {
     setError("");
     try {
       const res = await axios.post("http://localhost:5000/api/auth/signup", formData);
-      alert(res.data.message);
-      navigate("/Login");
+      setSuccessMessage(res.data.message);
+      setTimeout(() => {
+        setSuccessMessage("");
+        navigate("/Login");
+      }, 3000); // Clear message and navigate after 3 seconds
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");
     }
   };
 
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user")); // Check if user exists after signup
+    if (user) {
+      axios.post("http://localhost:5000/api/visitors", {
+        name: user.name || "Anonymous Visitor",
+        email: user.email || "unknown@example.com",
+        isSubscribed: user.isSubscribed || false
+      }).catch((error) => console.error("Error tracking visitor:", error));
+    }
+  }, []);
+  
   return (
     <div className={`relative flex justify-center items-center min-h-screen p-4 ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
       {/* Animated Background */}
@@ -54,6 +72,9 @@ const SignUp = () => {
               Join <span className="text-primary">Event Hive</span>
             </h2>
             {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+            {successMessage && (
+              <p className="text-green-500 text-center mb-4">{successMessage}</p>
+            )}
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <input
                 type="text"

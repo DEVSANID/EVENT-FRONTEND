@@ -1,8 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import '@fontsource/inter';
-
+@import '@fontsource/inter/400.css'; /* Regular weight */
+@import '@fontsource/inter/700.css'; /* Bold weight */
 
 body {
   margin: 0;
@@ -11,11 +11,61 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
-    
+}
+
+/* Typing Indicator Animation */
+.typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.typing-indicator span {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: #6b7280; /* Default dot color */
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out;
+  will-change: transform; /* Optimize for transform changes */
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #1a1a1a; /* Dark mode background */
+    color: white; /* Dark mode text color */
+  }
+
+  code {
+    background-color: #2d2d2d; /* Dark mode code background */
+    color: #f3f4f6; /* Dark mode code text color */
+  }
+
+  .typing-indicator span {
+    background-color: #9ca3af; /* Dark mode dot color */
+  }
 }

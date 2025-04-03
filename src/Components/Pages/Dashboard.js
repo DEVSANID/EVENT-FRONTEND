@@ -1,155 +1,114 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaBars, FaClipboardList, FaUsers, FaUser, FaSignOutAlt, FaUserPlus, FaUniversity } from "react-icons/fa";
+import { Button } from "../Button";
 
-const Dashboard = () => {
+// Import all tab components
+import DashboardTab from "./DashboardTab";
+import ManageEvents from "./ManageEvents";
+import VisitorsSubscribers from "./VisitorsSubscribers";
+import AdminProfile from "./AdminProfile";
+import TrendingCollege from "./TrendingColleges"; 
+
+export default function Dashboard() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [admin, setAdmin] = useState({ name: "Admin", photo: "https://via.placeholder.com/150" });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedAdmin = localStorage.getItem("admin");
+
+    if (storedAdmin) {
+      const parsedAdmin = JSON.parse(storedAdmin);
+      setAdmin({
+        name: parsedAdmin.name || "Admin",
+        photo: parsedAdmin.photo && parsedAdmin.photo.trim() !== "" 
+          ? parsedAdmin.photo 
+          : "/pie.png", // ✅ Default image
+      });
+    } else {
+      navigate("/admin/login");
+    }
+  }, [navigate]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (window.innerWidth < 768) setSidebarOpen(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("admin");
+    navigate("/admin/login");
+  };
+
   return (
-    <div className="w-[1440px] h-[1150px] flex bg-gray-100 p-0">
+    <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-        <div className="w-[250px] h-[1150px] bg-white flex flex-col items-center px-0 py-0 shadow-lg">
-            <h1 className="text-primary text-center text-[27px] font-bold mt-4 px-6 py-4">Event Hive</h1>
-            <nav className="w-full px-6 mt-8">
-            <NavLink
-                to="/dashboard"
-                className={({ isActive }) =>
-                `block px-6 py-4 font-semibold rounded-lg ${
-                    isActive ? "bg-primary text-white" : "text-black hover:bg-gray-200"
-                }`
-                }
-            >
-                Dashboard
-            </NavLink>
-            <NavLink
-                to="/dash-events"
-                className={({ isActive }) =>
-                `block px-6 py-4 font-semibold rounded-lg ${
-                    isActive ? "bg-primary text-white" : "text-black hover:bg-gray-200"
-                }`
-                }
-            >
-                Events
-            </NavLink>
-            <NavLink
-                to="/dash-messages"
-                className={({ isActive }) =>
-                `block px-6 py-4 font-semibold rounded-lg ${
-                    isActive ? "bg-primary text-white" : "text-black hover:bg-gray-200"
-                }`
-                }
-            >
-                Messages
-            </NavLink>
-            <NavLink
-                to="/dash-profile"
-                className={({ isActive }) =>
-                `block px-6 py-4 font-semibold rounded-lg ${
-                    isActive ? "bg-primary text-white" : "text-black hover:bg-gray-200"
-                }`
-                }
-            >
-                Profile
-            </NavLink>
-            </nav>
+      <aside className={`bg-white w-64 p-4 shadow-lg fixed h-full md:relative transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-64"}`}>
+        <h2 className="text-xl font-bold mb-6">Admin Dashboard</h2>
+
+        {/* Admin Info */}
+        <div className="flex items-center space-x-3 mb-6">
+          <img
+            src={admin.photo}
+            alt="Admin"
+            className="w-12 h-12 rounded-full border object-cover"
+            onError={(e) => { e.target.onerror = null; e.target.src = "https://via.placeholder.com/150"; }} 
+          />
+          <span className="font-semibold">{admin.name}</span>
         </div>
+
+        <ul className="space-y-4">
+          {[
+            { name: "Dashboard", tab: "dashboard", icon: <FaBars /> },
+            { name: "Manage Events", tab: "manage-events", icon: <FaClipboardList /> },
+            { name: "Visitors & Subscribers", tab: "visitors", icon: <FaUsers /> },
+            { name: "Admin Profile", tab: "profile", icon: <FaUser /> },
+            { name: "Trending Colleges", tab: "TrendingCollege", icon: <FaUniversity /> },
+          ].map((item) => (
+            <li
+              key={item.tab}
+              className={`flex items-center space-x-2 cursor-pointer p-2 rounded-md transition-colors ${activeTab === item.tab ? "bg-blue-100 text-blue-600 font-bold" : "hover:text-blue-600"}`}
+              onClick={() => handleTabChange(item.tab)}
+            >
+              {item.icon} <span>{item.name}</span>
+            </li>
+          ))}
+        </ul>
+
+        {/* Admin Registration Button */}
+        <button
+          className="w-full mt-6 flex items-center justify-center gap-2 bg-blue-500 text-white p-3 rounded-md hover:bg-blue-600 transition"
+          onClick={() => navigate("/admin/register")}
+        >
+          <FaUserPlus /> Register Admin
+        </button>
+      </aside>
 
       {/* Main Content */}
-      <div className="w-[1190px] flex flex-col px-0 py-0">
-        {/* Top Blank Card */}
-        <div className="w-[1190px] h-[100px] bg-white"></div>
+      <main className={`flex-1 p-6 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
+        {/* Header */}
+        <header className="flex justify-between items-center bg-white p-4 shadow-md">
+          <button className="md:hidden text-gray-600" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            ☰
+          </button>
+          <h1 className="text-2xl font-semibold">Welcome, {admin.name}</h1>
+          <Button variant="outline" onClick={handleLogout}>
+            <FaSignOutAlt className="mr-2" /> Logout
+          </Button>
+        </header>
 
-        {/* Content Section */}
-        <div className="flex flex-col items-center py-[20px] ">
-        <div className="w-[1130px] h-[984px] bg-background mt-4  px-0 py-0 justify-center items-center">
-          {/* Row 1: Four Cards */}
-          <div className="grid grid-cols-4 gap-[43px] h-[214px]">
-            <div className="bg-white h-full rounded-lg "></div>
-            <div className="bg-white h-full rounded-lg "></div>
-            <div className="bg-white h-full rounded-lg "></div>
-            <div className="bg-white h-full rounded-lg "></div>
-          </div>
-
-          {/* Row 2: Weekly Revenue */}
-          <div className="h-[345px] bg-white mt-8 rounded-lg shadow-md p-4">
-            <h2 className="text-[24px] font-semibold">Weekly Revenue</h2>
-            <img src="/chart.png" alt="Weekly Revenue Chart" className="w-[1067px] h-[256px] mt-6" />
-          </div>
-
-          {/* Row 3: Two Equal Cards */}
-          <div className="grid grid-cols-2 gap-4 h-[345px] mt-4">
-            {/* Left Card - Pie Chart */}
-            <div className="bg-white rounded-lg shadow-md p-4 w-full">
-            <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">Your Pie Chart</h2>
-                <div className="text-gray-500 text-sm flex items-center cursor-pointer font-bold font-sans mt-3">
-                Monthly
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 ml-1"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                >
-                    <path
-                    fillRule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"
-                    clipRule="evenodd"
-                    />
-                </svg>
-                </div>
-            </div>
-
-            <div className="w-full flex justify-center">
-                <img src="/pie.png" alt="Pie Chart" className="w-32 h-32 mt-4" />
-            </div>
-
-            {/* Additional Card */}
-            <div className="px-[50px] py-3 ">
-            <div className="bg-white shadow-lg rounded-lg w-[419px] h-[75px] mt-6 flex items-center justify-between px-6 py-4">
-                <div className="flex flex-col items-center">
-                <div className="flex items-center">
-                    <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
-                    <span className="text-gray-600 text-sm">Your Files</span>
-                </div>
-                <span className="text-black font-semibold text-lg">63%</span>
-                </div>
-
-                <div className="w-px h-full bg-gray-200"></div> {/* Divider line */}
-
-                <div className="flex flex-col items-center">
-                <div className="flex items-center">
-                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-                    <span className="text-gray-600 text-sm">System</span>
-                </div>
-                <span className="text-black font-semibold text-lg">25%</span>
-                </div>
-            </div>
-            </div>
-            </div>
-
-            {/* Right Card - Daily Traffic */}
-            <div className="bg-white rounded-lg shadow-md p-4 w-full">
-            <div className="flex justify-between items-center">
-                <div>
-                <h2 className="text-gray-400 text-[14px] font-semibold mt-3">Daily Traffic</h2>
-                <div className="flex items-end">
-                    <h1 className="text-3xl font-bold mt-3">2.579</h1>
-                    <span className="text-gray-400 text-[14px] font-semibold ml-2">Visitors</span>
-                </div>
-                </div>
-                <p className="text-green-500 text-sm flex items-center">
-                ▲ +2.45%
-                </p>
-            </div>
-
-            <div className="w-full flex justify-center">
-                <img src="/bars.png" alt="Bar Chart" className="w-fill h-auto mt-4" />
-            </div>
-            </div>
-            </div>
-          </div>
+        {/* Tab Content */}
+        <div className="mt-6 transition-opacity duration-300 ease-in-out">
+          {activeTab === "dashboard" && <DashboardTab />}
+          {activeTab === "manage-events" && <ManageEvents />}
+          {activeTab === "visitors" && <VisitorsSubscribers />}
+          {activeTab === "profile" && <AdminProfile />}
+          {activeTab === "TrendingCollege" && <TrendingCollege />} 
         </div>
-      </div>
+      </main>
     </div>
   );
-};
-
-export default Dashboard;
-
+}

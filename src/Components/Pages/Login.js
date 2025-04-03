@@ -1,42 +1,64 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { DarkModeContext } from "../context/DarkModeContext";
+import { AuthContext } from "../context/AuthContext"; 
 import { motion } from "framer-motion";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
   const navigate = useNavigate();
   const { darkMode } = useContext(DarkModeContext);
+  const { login } = useContext(AuthContext); 
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
+    setIsLoading(true);
+
     try {
       const response = await axios.post(
         "http://localhost:5000/api/auth/login",
         { email, password },
         { withCredentials: true }
       );
-      const userData = response.data.user;
-      localStorage.setItem("user", JSON.stringify({ name: userData.name, email: userData.email }));
-      alert("Login successful!");
-      navigate("/");
+
+      const { user, token } = response.data; // Extract user & token
+      login(user, token); // Store in AuthContext & localStorage
+
+      setSuccessMessage("Login successful! Redirecting...");
+      setTimeout(() => navigate("/"), 2000);
     } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong");
+      setError(err.response?.data?.message || "Something went wrong.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser) {
+      axios
+        .post("http://localhost:5000/api/visitors", {
+          name: storedUser.name,
+          email: storedUser.email,
+          isSubscribed: storedUser.isSubscribed || false,
+        })
+        .catch((error) => console.error("Error tracking visitor:", error));
+    }
+  }, []);
+
   return (
     <div className={`relative flex justify-center items-center min-h-screen p-4 ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
-      {/* Animated Background */}
       <motion.div 
         className="absolute inset-0 bg-gradient-to-br from-purple-500 to-blue-500 opacity-50"
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
-        transition={{ duration: 1 }}
+        transition={{ duration: 0.5 }}
       />
 
       <motion.div 
@@ -51,10 +73,40 @@ const Login = () => {
               Welcome Back to <span className="text-primary">Event Hive</span>
             </h2>
             {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+            {successMessage && <p className="text-green-500 text-center mb-4">{successMessage}</p>}
             <form onSubmit={handleLogin} className="flex flex-col gap-4">
-              <input type="email" placeholder="Enter your email" className="w-full h-[46px] p-3 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-none transition" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <input type="password" placeholder="Enter your password" className="w-full h-[46px] p-3 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-none transition" value={password} onChange={(e) => setPassword(e.target.value)} />
-              <button type="submit" className="w-full bg-primary text-white p-3 rounded-lg hover:bg-purple-600 transition">Sign In</button>
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="w-full h-[46px] p-3 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-none transition"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Enter your password"
+                className="w-full h-[46px] p-3 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-none transition"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => navigate("/forgot-password")}
+                  className="text-sm text-blue-500 hover:underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-primary text-white p-3 rounded-lg hover:bg-purple-600 transition disabled:opacity-50"
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing In..." : "Sign In"}
+              </button>
             </form>
             <div className="flex items-center justify-center mt-4">
               <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Or continue with</span>
