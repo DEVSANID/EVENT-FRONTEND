@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import axios from "axios";
+import { DarkModeContext } from "../context/DarkModeContext";
+import { motion } from "framer-motion";
 
 export default function MyOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const { darkMode } = useContext(DarkModeContext);
   const token = localStorage.getItem("token");
 
   useEffect(() => {
@@ -42,37 +44,55 @@ export default function MyOrders() {
   }, [token]);
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">My Orders</h1>
+    <div className={`min-h-screen px-4 py-10 ${darkMode ? "bg-gray-900 text-gray-100" : "text-gray-800"}`}>
+      <div className="max-w-6xl mx-auto">
+        <h1
+          className={`text-4xl font-extrabold text-center mb-10 tracking-wide 
+              text-white drop-shadow-md`}
+        >
+          My Orders
+        </h1>
 
-      {loading ? (
-        <p className="text-center text-gray-500">Loading...</p>
-      ) : error ? (
-        <p className="text-center text-red-500 font-semibold">{error}</p>
-      ) : orders.length === 0 ? (
-        <p className="text-center text-gray-600">No orders found.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {orders.map((order) => (
-            <div
-              key={order._id}
-              className="border p-6 rounded-xl shadow-lg bg-white transition-transform transform hover:scale-105 hover:shadow-xl"
-            >
-              <h2 className="text-xl font-semibold mb-3 text-gray-800">Order #{order._id}</h2>
-              <p className="text-gray-500 text-sm">Date: {new Date(order.createdAt).toLocaleDateString()}</p>
-              <ul className="mt-4 border-t pt-3 divide-y divide-gray-200">
-                {order.items.map((item, index) => (
-                  <li key={index} className="flex justify-between py-2 text-gray-700">
-                    <span>{item.name} (x{item.quantity})</span>
-                    <span className="font-bold">₹{item.price * item.quantity}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-4 text-lg font-bold text-gray-800">Total: ₹{order.totalAmount}</p>
-            </div>
-          ))}
-        </div>
-      )}
+        {loading ? (
+          <p className="text-center text-gray-500 dark:text-gray-400">Loading...</p>
+        ) : error ? (
+          <p className="text-center text-red-500 font-semibold">{error}</p>
+        ) : orders.length === 0 ? (
+          <p className="text-center text-gray-600 dark:text-gray-400">No orders found.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {orders.map((order, index) => (
+              <motion.div
+                key={order._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                whileHover={{ scale: 1.03 }}
+                className={`rounded-2xl shadow-md p-6 transition-all duration-300 
+                            ${darkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"}`}
+              >
+                <h2 className="text-lg font-semibold mb-2">
+                  <span className="text-indigo-500 dark:text-indigo-400">Order ID:</span> {order._id}
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Placed on: {new Date(order.createdAt).toLocaleDateString()}
+                </p>
+                <div className="space-y-2 border-t border-dashed border-gray-300 dark:border-gray-600 pt-3">
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span>{item.name} <span className="text-xs text-gray-400">(x{item.quantity})</span></span>
+                      <span className="font-medium">₹{item.price * item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-right text-base font-bold text-indigo-600 dark:text-indigo-400">
+                  Total: ₹{order.totalAmount}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

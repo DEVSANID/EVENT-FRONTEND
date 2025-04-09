@@ -11,7 +11,7 @@ const PaymentPage = () => {
 
   const handlePayment = () => {
     const options = {
-      key: "rzp_test_YourTestKeyHere", // Replace with your Razorpay Test Key
+      key: "rzp_test_7smP6uzurR9YWn", //  Test Key
       amount: 50000, // Amount in paisa (₹500)
       currency: "INR",
       name: "Test Event",

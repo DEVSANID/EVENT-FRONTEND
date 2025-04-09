@@ -71,8 +71,11 @@ root.render(
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/shop" element={<EventShop />} />
             <Route path="/my-orders" element={<MyOrders />} />
+            <Route path="/visitors-subscribers" element={<VisitorsSubscribers />} /> 
+            <Route path="/event/:id" element={<EventDetails />} />
+
             <Route element={<ProtectedRoute />}>
-            <Route path="/visitors-subscribers" element={<VisitorsSubscribers />} />  
+             
             
 
             </Route>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaUserCircle } from "react-icons/fa"; // Avatar Icon
+import { FaUserCircle } from "react-icons/fa";
 
 export default function AdminProfile() {
   const [admin, setAdmin] = useState({
@@ -22,30 +22,34 @@ export default function AdminProfile() {
   }, []);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-md">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-100 via-white to-blue-100 p-4">
+      <div className="bg-white dark:bg-gray-900 shadow-2xl rounded-2xl p-8 w-full max-w-md transition-all duration-300">
         {/* Avatar Icon */}
-        <div className="flex justify-center mb-4">
-          <FaUserCircle className="text-gray-500 text-6xl" />
+        <div className="flex justify-center mb-6">
+          <FaUserCircle className="text-gray-500 dark:text-gray-300 text-7xl" />
         </div>
 
-        <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">
+        <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-6">
           Admin Profile
         </h2>
 
-        <div className="bg-gray-50 p-5 rounded-lg shadow-sm">
-          <p className="text-lg text-gray-700 mb-3">
-            <strong className="text-gray-900">Name:</strong> {admin.name}
-          </p>
-          <p className="text-lg text-gray-700 mb-3">
-            <strong className="text-gray-900">Email:</strong> {admin.email}
-          </p>
-          <p className="text-lg text-gray-700 mb-3">
-            <strong className="text-gray-900">Login Time:</strong> {admin.loginTime}
-          </p>
-          <p className="text-lg text-gray-700">
-            <strong className="text-gray-900">Logout Time:</strong> {admin.logoutTime}
-          </p>
+        <div className="space-y-4 bg-gray-50 dark:bg-gray-800 p-6 rounded-xl shadow-inner">
+          <div className="text-lg">
+            <span className="font-semibold text-gray-900 dark:text-white">Name:</span>{" "}
+            <span className="text-gray-700 dark:text-gray-300">{admin.name}</span>
+          </div>
+          <div className="text-lg">
+            <span className="font-semibold text-gray-900 dark:text-white">Email:</span>{" "}
+            <span className="text-gray-700 dark:text-gray-300">{admin.email}</span>
+          </div>
+          <div className="text-lg">
+            <span className="font-semibold text-gray-900 dark:text-white">Login Time:</span>{" "}
+            <span className="text-gray-700 dark:text-gray-300">{admin.loginTime}</span>
+          </div>
+          <div className="text-lg">
+            <span className="font-semibold text-gray-900 dark:text-white">Logout Time:</span>{" "}
+            <span className="text-gray-700 dark:text-gray-300">{admin.logoutTime}</span>
+          </div>
         </div>
       </div>
     </div>

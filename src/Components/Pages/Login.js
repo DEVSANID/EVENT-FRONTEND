@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { DarkModeContext } from "../context/DarkModeContext";
-import { AuthContext } from "../context/AuthContext"; 
+import { AuthContext } from "../context/AuthContext";
 import { motion } from "framer-motion";
 
 const Login = () => {
@@ -13,7 +13,7 @@ const Login = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const navigate = useNavigate();
   const { darkMode } = useContext(DarkModeContext);
-  const { login } = useContext(AuthContext); 
+  const { login } = useContext(AuthContext);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -27,8 +27,8 @@ const Login = () => {
         { withCredentials: true }
       );
 
-      const { user, token } = response.data; // Extract user & token
-      login(user, token); // Store in AuthContext & localStorage
+      const { user, token } = response.data;
+      login(user, token);
 
       setSuccessMessage("Login successful! Redirecting...");
       setTimeout(() => navigate("/"), 2000);
@@ -67,7 +67,7 @@ const Login = () => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className={`w-full lg:col-span-2 flex justify-center items-center ${darkMode ? "bg-gray-700/80" : "bg-white/80"} order-2 lg:order-1 p-6 rounded-l-lg shadow-xl`}> 
+        <div className={`w-full lg:col-span-2 flex justify-center items-center ${darkMode ? "bg-gray-700/80" : "bg-white/80"} order-2 lg:order-1 p-6 rounded-l-lg shadow-xl`}>
           <div className="w-[90%] max-w-[578px] flex flex-col justify-center text-center">
             <h2 className={`text-4xl font-extrabold mb-6 ${darkMode ? "text-white" : "text-black"}`}>
               Welcome Back to <span className="text-primary">Event Hive</span>
@@ -78,7 +78,9 @@ const Login = () => {
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="w-full h-[46px] p-3 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-none transition"
+                className={`w-full h-[46px] p-3 rounded-lg border 
+                  ${darkMode ? "bg-gray-700 text-white placeholder-gray-300 border-gray-600" : "bg-white text-black placeholder-gray-500 border-gray-300"} 
+                  focus:ring-2 focus:ring-primary focus:outline-none transition`}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -86,7 +88,9 @@ const Login = () => {
               <input
                 type="password"
                 placeholder="Enter your password"
-                className="w-full h-[46px] p-3 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-none transition"
+                className={`w-full h-[46px] p-3 rounded-lg border 
+                  ${darkMode ? "bg-gray-700 text-white placeholder-gray-300 border-gray-600" : "bg-white text-black placeholder-gray-500 border-gray-300"} 
+                  focus:ring-2 focus:ring-primary focus:outline-none transition`}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -95,7 +99,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => navigate("/forgot-password")}
-                  className="text-sm text-blue-500 hover:underline"
+                  className={`text-sm ${darkMode ? "text-blue-400 hover:text-blue-300" : "text-blue-500 hover:text-blue-600"} hover:underline`}
                 >
                   Forgot Password?
                 </button>
@@ -112,7 +116,8 @@ const Login = () => {
               <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Or continue with</span>
             </div>
             <div className="flex justify-center mt-3">
-              <button className="w-full flex justify-center items-center gap-2 border p-3 rounded-lg hover:bg-gray-200 transition">
+              <button className={`w-full flex justify-center items-center gap-2 border p-3 rounded-lg transition
+                ${darkMode ? "border-gray-600 bg-gray-700 text-white hover:bg-gray-600" : "hover:bg-gray-200 bg-white text-black border-gray-300"}`}>
                 <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" className="w-5 h-5" />
                 Sign in with Google
               </button>

@@ -3,36 +3,41 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export default function EditEvent() {
-  const { id } = useParams(); // Get event ID from URL
+  const { id } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState({ title: "", venue: "", startDate: "", endDate: "", imageUrl: "" });
   const [loading, setLoading] = useState(true);
 
-  // Fetch event details
   useEffect(() => {
-    axios.get(`http://localhost:5000/api/events/${id}`)
-      .then(response => {
+    const fetchEventDetails = async () => {
+      if (!id) {
+        console.error("No event ID provided.");
+        return;
+      }
+
+      try {
+        const response = await axios.get(`http://localhost:5000/api/events/${id}`);
         setEvent(response.data);
+      } catch (error) {
+        console.error("Error fetching event details:", error);
+      } finally {
         setLoading(false);
-      })
-      .catch(error => {
-        console.error("Error fetching event:", error);
-        setLoading(false);
-      });
+      }
+    };
+
+    fetchEventDetails();
   }, [id]);
 
-  // Handle input changes
   const handleChange = (e) => {
     setEvent({ ...event, [e.target.name]: e.target.value });
   };
 
-  // Update event
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await axios.put(`http://localhost:5000/api/events/${id}`, event);
       alert("Event updated successfully!");
-      navigate("/ManageEvents"); // Redirect back to manage events
+      navigate("/ManageEvents");
     } catch (error) {
       console.error("Error updating event:", error);
     }
@@ -56,7 +61,6 @@ export default function EditEvent() {
         <label className="block mb-2">End Date:</label>
         <input type="date" name="endDate" value={event.endDate?.split("T")[0]} onChange={handleChange} className="border p-2 w-full mb-4" required />
 
-        {/* ✅ Image Preview & URL Input */}
         <label className="block mb-2">Event Image:</label>
         {event.imageUrl && <img src={event.imageUrl} alt="Event" className="w-full h-40 object-cover mb-4 rounded" />}
         <input type="text" name="imageUrl" value={event.imageUrl} onChange={handleChange} className="border p-2 w-full mb-4" placeholder="Enter Image URL" />

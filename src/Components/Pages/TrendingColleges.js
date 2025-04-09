@@ -5,6 +5,7 @@ const TrendingCollege = ({ darkMode }) => {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [rating, setRating] = useState("");
+  const [description, setDescription] = useState(""); // ✅ NEW
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -40,6 +41,7 @@ const TrendingCollege = ({ darkMode }) => {
     formData.append("name", name);
     formData.append("location", location);
     formData.append("rating", rating);
+    formData.append("description", description); // ✅ NEW
     if (image) {
       formData.append("image", image);
     }
@@ -70,6 +72,7 @@ const TrendingCollege = ({ darkMode }) => {
     setName(college.name);
     setLocation(college.location);
     setRating(college.rating);
+    setDescription(college.description || ""); // ✅ NEW
     setImage(null);
   };
 
@@ -94,6 +97,7 @@ const TrendingCollege = ({ darkMode }) => {
     setName("");
     setLocation("");
     setRating("");
+    setDescription(""); // ✅ NEW
     setImage(null);
     setEditingId(null);
   };
@@ -143,6 +147,13 @@ const TrendingCollege = ({ darkMode }) => {
           required
           className="w-full p-3 rounded-lg border border-gray-300 text-gray-900 focus:ring focus:ring-purple-300"
         />
+        <textarea
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
+          className="w-full p-3 rounded-lg border border-gray-300 text-gray-900 focus:ring focus:ring-purple-300"
+        />
         <input
           type="file"
           accept="image/*"
@@ -169,6 +180,7 @@ const TrendingCollege = ({ darkMode }) => {
             <h4 className="text-lg font-semibold text-gray-900">{college.name}</h4>
             <p className="text-sm text-gray-600">{college.location}</p>
             <p className="text-sm font-semibold text-yellow-500">⭐ {college.rating}</p>
+            <p className="text-sm text-gray-700 mt-2">{college.description}</p> {/* ✅ Display Description */}
             <div className="mt-3 flex justify-between">
               <button onClick={() => handleEdit(college)} className="text-blue-500 hover:text-blue-600 font-medium">
                 Edit

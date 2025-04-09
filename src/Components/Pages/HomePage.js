@@ -5,9 +5,8 @@ import Footer from "../Footer";
 import { DarkModeContext } from "../context/DarkModeContext";
 import { motion } from "framer-motion";
 import Chatbot from "./ChatBot";
-import BlogForm from "./BlogForm"; // Import the BlogForm component
+import BlogForm from "./BlogForm";
 import axios from "axios";
-
 
 // Reusable Event Card Component
 const EventCard = ({ event, darkMode }) => (
@@ -17,14 +16,16 @@ const EventCard = ({ event, darkMode }) => (
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       whileHover={{ scale: 1.05 }}
-      className={`${darkMode ? "bg-gray-800" : "bg-white"
-        } shadow-lg rounded-xl overflow-hidden p-5 cursor-pointer`}
+      className={`${darkMode ? "bg-gray-800" : "bg-white"} shadow-lg rounded-xl overflow-hidden p-5 cursor-pointer`}
     >
       <div className="relative w-full flex justify-center">
         <img
           src={event.imageUrl || "/default-event.jpg"}
           alt={event.title}
           className="w-full h-[240px] object-cover rounded-lg"
+          onError={(e) => {
+            e.target.src = "/default-event.jpg";
+          }}
         />
       </div>
       <div className="mt-4 text-left space-y-2">
@@ -40,13 +41,22 @@ const EventCard = ({ event, darkMode }) => (
   </Link>
 );
 
-// Reusable College Card Component
-const CollegeCard = ({ college, darkMode }) => (
-  <div
-    className={`${darkMode ? "bg-gray-800" : "bg-white"} rounded-xl shadow-lg overflow-hidden`}
+// Updated CollegeCard component with animation
+const CollegeCard = ({ college, darkMode, onClick }) => (
+  <motion.div
+    whileTap={{ scale: 0.95 }}
+    onClick={onClick}
+    className={`${darkMode ? "bg-gray-800" : "bg-white"} rounded-xl shadow-lg overflow-hidden cursor-pointer`}
   >
     <div className="relative">
-      <img src={college.image} alt={college.name} className="w-full h-48 sm:h-56 object-cover rounded-xl" />
+      <img
+        src={college.image}
+        alt={college.name}
+        className="w-full h-48 sm:h-56 object-cover rounded-xl"
+        onError={(e) => {
+          e.target.src = "/default-college.jpg";
+        }}
+      />
       <span className="absolute top-2 left-2 flex items-center bg-white text-black text-xs font-bold px-2 py-1 rounded-md">
         <FaStar className="text-yellow-500 mr-1" /> {college.rating}
       </span>
@@ -61,16 +71,25 @@ const CollegeCard = ({ college, darkMode }) => (
         <FaEllipsisH className={`${darkMode ? "text-gray-400" : "text-gray-500"} cursor-pointer`} />
       </div>
     </div>
-  </div>
+  </motion.div>
 );
 
-// Reusable Blog Card Component
-const BlogCard = ({ blog, darkMode }) => (
-  <div
-    className={`${darkMode ? "bg-gray-800" : "bg-white"} shadow-lg rounded-xl overflow-hidden p-5`}
+// Updated BlogCard component with animation
+const BlogCard = ({ blog, darkMode, onClick }) => (
+  <motion.div
+    whileTap={{ scale: 0.95 }}
+    onClick={onClick}
+    className={`${darkMode ? "bg-gray-800" : "bg-white"} shadow-lg rounded-xl overflow-hidden p-5 cursor-pointer`}
   >
     <div className="relative w-full flex justify-center">
-      <img src={blog.image} alt={blog.title} className="w-full h-[240px] object-cover rounded-lg" />
+      <img
+        src={blog.imageUrl || blog.image || "/default-blog.jpg"}
+        alt={blog.title}
+        className="w-full h-[240px] object-cover rounded-lg"
+        onError={(e) => {
+          e.target.src = "/default-blog.jpg";
+        }}
+      />
       <span className="absolute top-2 left-2 bg-white text-primary text-xs font-semibold px-2 py-1 rounded">
         FREE
       </span>
@@ -79,11 +98,18 @@ const BlogCard = ({ blog, darkMode }) => (
       <h3 className={`text-md font-semibold leading-tight ${darkMode ? "text-white" : "text-black"}`}>
         {blog.title}
       </h3>
+      {/* Add author name here */}
+      <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+        By {blog.author || "Unknown Author"}
+      </p>
       <p className="text-xs font-medium text-primary leading-[2.5]">{blog.date}</p>
-      <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{blog.location}</p>
+      <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+        📍 {blog.location}
+      </p>
     </div>
-  </div>
+  </motion.div>
 );
+
 
 const HomePage = () => {
   const [events, setEvents] = useState([]);
@@ -101,14 +127,29 @@ const HomePage = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef(null);
   const [colleges, setColleges] = useState([]);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedCollege, setSelectedCollege] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBlog, setSelectedBlog] = useState(null);
+  const [isBlogModalOpen, setIsBlogModalOpen] = useState(false);
+  const backendBaseURL = "http://localhost:5000";
+
+
+
+  // Add this function to handle college selection
+  const handleCollegeClick = (college) => {
+    setSelectedCollege(college);
+    setIsModalOpen(true);
+  };
 
 
   // Initialize user state from localStorage
   const fetchBookings = async (email) => {
     if (!email) return;
     try {
-      const response = await axios.get(`http://localhost:5000/api/bookings/${email}`);
-      console.log("Fetched Bookings:", response.data);
+      const response = await axios.get(`http://localhost:5000/api/bookings/get-bookings/${email}`);
+
       setBookings(response.data);
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -120,58 +161,53 @@ const HomePage = () => {
     const loggedInUser = JSON.parse(localStorage.getItem("user"));
     if (loggedInUser) {
       setUser(loggedInUser);
-      fetchBookings(loggedInUser.email); // Pass email directly
+      fetchBookings(loggedInUser.email);
     }
   }, []);
 
   const handleShowBookings = () => {
-    setShowBookings(!showBookings); // ✅ Toggle bookings visibility
-    if (!showBookings) {
-      fetchBookings();
+    setShowBookings(!showBookings);
+    if (!showBookings && user) {
+      fetchBookings(user.email);
     }
   };
+
   useEffect(() => {
     const trackVisitor = async () => {
-      let visitorEmail = localStorage.getItem("visitorEmail"); // Retrieve existing email
+      let visitorEmail = localStorage.getItem("visitorEmail");
       if (!visitorEmail) {
-        visitorEmail = `visitor_${Date.now()}@example.com`; // Create a new visitor email if none exists
-        localStorage.setItem("visitorEmail", visitorEmail); // Store it in localStorage
+        visitorEmail = `visitor_${Date.now()}@example.com`;
+        localStorage.setItem("visitorEmail", visitorEmail);
       }
-  
+
       const sessionId = localStorage.getItem("sessionId") || Date.now().toString();
-      localStorage.setItem("sessionId", sessionId); // Store session ID
-  
+      localStorage.setItem("sessionId", sessionId);
+
       try {
         await axios.post("http://localhost:5000/api/visitors", {
           name: "Anonymous Visitor",
-          email: visitorEmail, // ✅ Use stored email instead of generating a new one
+          email: visitorEmail,
         }, {
           headers: {
-            "visitor-session": sessionId, // ✅ Send session ID to backend
+            "visitor-session": sessionId,
           },
         });
       } catch (error) {
         console.error("Error tracking visitor:", error);
       }
     };
-  
+
     trackVisitor();
-  }, []); // ✅ Runs only once per session
-  
-   
+  }, []);
 
   // Fetch events from backend
   useEffect(() => {
     const fetchEvents = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("http://localhost:5000/api/events");
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-        setEvents(data);
-        setFilteredEvents(data);
+        const response = await axios.get("http://localhost:5000/api/events");
+        setEvents(response.data);
+        setFilteredEvents(response.data);
       } catch (error) {
         console.error("Error fetching events:", error);
       } finally {
@@ -186,12 +222,8 @@ const HomePage = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/blogs");
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-        setBlogs(data);
+        const response = await axios.get("http://localhost:5000/api/blogs");
+        setBlogs(response.data);
       } catch (error) {
         console.error("Error fetching blogs:", error);
         // Fallback to dummy data if API fails
@@ -238,38 +270,21 @@ const HomePage = () => {
   }, [searchTerm, events]);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user")); // Assuming user data is stored in localStorage
-    if (user) {
-      axios.post("http://localhost:5000/api/visitors", {
-        name: user.name,
-        email: user.email,
-        isSubscribed: user.isSubscribed || false
-      }).catch((error) => console.error("Error tracking visitor:", error));
-    }
-  }, []);
-
-
-  useEffect(() => {
     const fetchColleges = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/colleges/trending");
-        if (response.ok) {
-          const data = await response.json();
-          setColleges(data);
-        } else {
-          console.error("Failed to fetch trending colleges:", response.status);
-        }
+        const response = await axios.get("http://localhost:5000/api/colleges/trending");
+        setColleges(response.data);
       } catch (error) {
         console.error("Error fetching trending colleges:", error);
       }
     };
-  
+
     fetchColleges();
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
-    localStorage.removeItem("token");  // Ensure token is removed too
+    localStorage.removeItem("token");
     setUser(null);
     navigate("/");
   };
@@ -289,9 +304,40 @@ const HomePage = () => {
   }, []);
 
   const handleNewBlog = (newBlog) => {
-    setBlogs([newBlog, ...blogs]);
+    setBlogs(prevBlogs => [{
+      ...newBlog,
+      image: newBlog.imageUrl, // Map imageUrl to image for backward compatibility
+      id: newBlog.id || Date.now() // Ensure we have an ID
+    }, ...prevBlogs]);
     setShowBlogForm(false);
   };
+
+  const handleSearch = async () => {
+    try {
+      const queryParams = new URLSearchParams();
+
+      if (searchTerm) queryParams.append("name", searchTerm);
+      if (selectedDate) queryParams.append("date", selectedDate);
+      if (selectedLocation) queryParams.append("location", selectedLocation);
+
+      const response = await fetch(
+        `http://localhost:5000/api/events/search?${queryParams.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+      console.log("Search result:", data);
+      setFilteredEvents(data); // Display results in UI
+    } catch (error) {
+      console.error("Search error:", error);
+    }
+  };
+
 
   return (
     <div className={`font-sans ${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"}`}>
@@ -363,13 +409,37 @@ const HomePage = () => {
                       <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg max-h-40 overflow-auto">
                         {bookings.length > 0 ? (
                           bookings.map((booking) => (
-                            <Link
-                              key={booking._id}
-                              to={`/event/${booking.eventId}`}
-                              className="block px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
-                            >
-                              {booking.name} ({booking.tickets} tickets)
-                            </Link>
+                            <div key={booking._id} className="px-4 py-2">
+                              <p className="text-sm text-black dark:text-white font-medium">
+                                {booking.name} ({booking.tickets} tickets)
+                              </p>
+
+                              <div className="flex gap-2 mt-1">
+                                {/* View Event */}
+                                <Link
+                                  to={`/event/${booking.eventId}`}
+                                  className="text-blue-600 dark:text-blue-400 text-xs hover:underline"
+                                >
+                                  View Event
+                                </Link>
+
+                                {/* Open PDF in New Tab */}
+                                {booking.ticketPath ? (
+                                  <a
+                                    href={`${backendBaseURL}${booking.ticketPath}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-green-600 dark:text-green-400 text-xs hover:underline"
+                                  >
+                                    View Ticket 🎟️
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-500 dark:text-gray-400 text-xs">
+                                    Ticket not available
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           ))
                         ) : (
                           <p className="px-4 py-2 text-xs text-gray-500 dark:text-gray-300">
@@ -378,6 +448,7 @@ const HomePage = () => {
                         )}
                       </div>
                     )}
+
 
                     {/* Logout */}
                     <button
@@ -409,7 +480,6 @@ const HomePage = () => {
         </div>
       </header>
 
-
       {/* Hero Section */}
       <section
         className="w-full max-w-7xl mx-auto bg-cover bg-center flex items-center justify-center text-white rounded-lg md:rounded-2xl mt-4 md:mt-6 h-[300px] md:h-[400px] lg:h-[470px]"
@@ -423,51 +493,53 @@ const HomePage = () => {
       {/* Event Search Bar */}
       <div className="w-full flex justify-center px-4">
         <div
-          className={`${darkMode ? "bg-gray-800" : "bg-navyBlue"
-            } w-full max-w-[1200px] h-auto py-6 px-4 sm:px-6 flex flex-col sm:flex-row flex-wrap justify-center gap-4 sm:gap-6 rounded-2xl relative -top-8 sm:-top-12 md:-top-16 mx-auto shadow-lg text-white`}
+          className={`${darkMode ? "bg-gray-800" : "bg-navyBlue"} w-full max-w-[1200px] h-auto py-6 px-4 sm:px-6 flex flex-col sm:flex-row flex-wrap justify-center gap-4 sm:gap-6 rounded-2xl relative -top-8 sm:-top-12 md:-top-16 mx-auto shadow-lg text-white`}
         >
           {/* Search Input */}
           <div className="flex flex-col w-full sm:w-[290px]">
-            <label className="mb-2 text-sm font-medium">Search by name</label>
+            <label htmlFor="search-input" className="mb-2 text-sm font-medium">Search by name</label>
             <input
+              id="search-input"
               type="text"
               placeholder="Event name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`p-2 rounded-md ${darkMode ? "bg-gray-700 text-white" : "bg-backgroundGrey text-black"
-                } w-full h-[40px]`}
+              className={`p-2 rounded-md ${darkMode ? "bg-gray-700 text-white" : "bg-backgroundGrey text-black"} w-full h-[40px]`}
             />
           </div>
 
           {/* Event Date Picker */}
           <div className="flex flex-col w-full sm:w-[290px]">
-            <label className="mb-2 text-sm font-medium">Select Date</label>
+            <label htmlFor="event-date" className="mb-2 text-sm font-medium">Select Date</label>
             <input
+              id="event-date"
               type="date"
-              className={`p-2 rounded-md ${darkMode ? "bg-gray-700 text-white" : "bg-backgroundGrey text-black"
-                } w-full h-[40px]`}
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className={`p-2 rounded-md ${darkMode ? "bg-gray-700 text-white" : "bg-backgroundGrey text-black"} w-full h-[40px]`}
             />
           </div>
 
 
-          {/* Location Dropdown */}
+          {/* Location Input */}
           <div className="flex flex-col w-full sm:w-[290px]">
-            <label className="mb-2 text-sm font-medium">Location</label>
-            <select
-              className={`p-2 rounded-md ${darkMode ? "bg-gray-700 text-white" : "bg-backgroundGrey text-black"
-                } w-full h-[40px]`}
-            >
-              <option value="">Choose location</option>
-              <option value="Bangalore">Bangalore</option>
-              <option value="Pune">Pune</option>
-              <option value="Haryana">Haryana</option>
-            </select>
+            <label htmlFor="location-input" className="mb-2 text-sm font-medium">Location</label>
+            <input
+              id="location-input"
+              type="text"
+              placeholder="City or venue..."
+              value={selectedLocation}
+              onChange={(e) => setSelectedLocation(e.target.value)}
+              className={`p-2 rounded-md ${darkMode ? "bg-gray-700 text-white" : "bg-backgroundGrey text-black"} w-full h-[40px]`}
+            />
           </div>
 
           {/* Search Button */}
           <div className="w-full flex justify-center sm:w-auto">
             <button
               className="bg-primary p-4 rounded-lg text-white flex items-center justify-center w-[70px] h-[70px] mt-4 sm:mt-3 mx-6"
+              aria-label="Search events"
+              onClick={handleSearch}
             >
               <FaSearch size={20} />
             </button>
@@ -476,7 +548,7 @@ const HomePage = () => {
       </div>
 
       {/* Upcoming Events Section */}
-      <section className={`w-full  px-4 sm:px-6 ${darkMode ? "bg-gray-900" : "bg-white"}`}>
+      <section className={`w-full px-4 sm:px-6 ${darkMode ? "bg-gray-900" : "bg-white"}`}>
         <div className="max-w-6xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-center">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -489,7 +561,9 @@ const HomePage = () => {
         </div>
 
         {isLoading ? (
-          <p className="text-center text-gray-500">Loading events...</p>
+          <div className="max-w-6xl mx-auto flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
         ) : (
           <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.length > 0 ? (
@@ -519,14 +593,16 @@ const HomePage = () => {
 
       {/* Create Your Event Section */}
       <div
-        className={`relative ${darkMode ? "bg-gray-800" : "bg-navyBlue"
-          } text-white p-6 sm:p-7 rounded-lg shadow-lg flex flex-col sm:flex-row items-center justify-between my-8 mx-4 sm:mx-auto max-w-6xl`}
+        className={`relative ${darkMode ? "bg-gray-800" : "bg-navyBlue"} text-white p-6 sm:p-7 rounded-lg shadow-lg flex flex-col sm:flex-row items-center justify-between my-8 mx-4 sm:mx-auto max-w-6xl`}
       >
         <div className="w-full sm:w-1/2 flex justify-center sm:justify-start relative">
           <img
             src="/Logo.png"
             alt="Event Illustration"
             className="w-[180px] xs:w-[220px] sm:w-[280px] md:w-[350px] lg:w-[400px] h-auto sm:absolute sm:-top-[130px] sm:left-10"
+            onError={(e) => {
+              e.target.src = "/default-image.jpg";
+            }}
           />
         </div>
         <div className="w-full sm:w-1/2 text-center sm:text-left sm:pl-10 mt-4 sm:mt-0">
@@ -555,41 +631,60 @@ const HomePage = () => {
 
       {/* Brand Logos Section */}
       <section className={`p-6 sm:p-12 text-center ${darkMode ? "bg-gray-900" : "bg-white"}`}>
-  <h2 className="text-2xl sm:text-[36px] font-bold">
-    Join these <span className="text-primary">brands</span>
-  </h2>
-  <div className="flex flex-wrap justify-center gap-4 sm:gap-6 mt-6 text-lg bg-transparent">
-    <img src="/Google.png" alt="Google" className="h-8 sm:h-12 max-w-[80px] sm:max-w-[100px] object-contain" />
-    <img src="/Spotify.png" alt="Spotify" className="h-8 sm:h-12 max-w-[80px] sm:max-w-[100px] object-contain" />
-    <img src="/Microsoft.png" alt="Microsoft" className="h-8 sm:h-12 max-w-[80px] sm:max-w-[100px] object-contain" />
-    <img src="/Uber.png" alt="Uber" className="h-8 sm:h-12 max-w-[80px] sm:max-w-[100px] object-contain dark:invert" />
-    <img src="/Zoom.png" alt="Zoom" className="h-8 sm:h-12 max-w-[80px] sm:max-w-[100px] object-contain" />
-    <img src="/Stripe.png" alt="Stripe" className="h-8 sm:h-12 max-w-[80px] sm:max-w-[100px] object-contain dark:invert" />
-  </div>
-</section>
-
+        <h2 className="text-2xl sm:text-[36px] font-bold">
+          Join these <span className="text-primary">brands</span>
+        </h2>
+        <div className="flex flex-wrap justify-center gap-4 sm:gap-6 mt-6 text-lg bg-transparent">
+          {["Google", "Spotify", "Microsoft", "Uber", "Zoom", "Stripe"].map((brand) => (
+            <img
+              key={brand}
+              src={`/${brand}.png`}
+              alt={brand}
+              className="h-8 sm:h-12 max-w-[80px] sm:max-w-[100px] object-contain"
+              onError={(e) => {
+                e.target.src = "/default-brand.png";
+              }}
+            />
+          ))}
+        </div>
+      </section>
 
       {/* Trending Colleges Section */}
       <section className={`w-full py-8 sm:py-10 px-4 sm:px-6 ${darkMode ? "bg-gray-900" : "bg-white"}`}>
-  <div className="max-w-6xl mx-auto mb-6">
-    <h2 className="text-2xl sm:text-[36px] font-sans font-bold">
-      Trending <span className="text-purple-500">colleges</span>
-    </h2>
-  </div>
+        <div className="max-w-6xl mx-auto mb-6">
+          <h2 className="text-2xl sm:text-[36px] font-sans font-bold">
+            Trending <span className="text-purple-500">colleges</span>
+          </h2>
+        </div>
 
-  <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-    {colleges.map((college) => (
-      <CollegeCard key={college._id || college.id} college={college} darkMode={darkMode} />
-    ))}
-  </div>
+        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {colleges.map((college, index) => (
+            <motion.div
+              key={college._id || college.id}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.5, ease: "easeOut" }}
+              whileHover={{ scale: 1.03 }}
+              className="shadow-md hover:shadow-xl transition-shadow duration-300 rounded-2xl"
+            >
+              <CollegeCard
+                college={college}
+                darkMode={darkMode}
+                onClick={() => handleCollegeClick(college)}
+              />
+            </motion.div>
+          ))}
+        </div>
 
-  <div className="max-w-6xl mx-auto mt-8 flex justify-center">
-    <button className="bg-purple-500 text-white px-6 py-2 rounded-md" aria-label="Load more">
-      Load more...
-    </button>
-  </div>
-</section>
-
+        <div className="max-w-6xl mx-auto mt-8 flex justify-center">
+          <button
+            className="bg-purple-500 text-white px-6 py-2 rounded-md"
+            aria-label="Load more colleges"
+          >
+            Load more...
+          </button>
+        </div>
+      </section>
 
       {/* Blog Section */}
       <section className={`w-full py-8 sm:py-10 px-4 sm:px-6 ${darkMode ? "bg-gray-900" : "bg-white"}`}>
@@ -601,6 +696,7 @@ const HomePage = () => {
             <button
               onClick={() => setShowBlogForm(!showBlogForm)}
               className="bg-primary text-white px-4 py-2 rounded-md"
+              aria-label={showBlogForm ? 'Hide blog form' : 'Add new blog'}
             >
               {showBlogForm ? 'Hide Form' : 'Add Blog'}
             </button>
@@ -618,11 +714,178 @@ const HomePage = () => {
         )}
 
         <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {blogs.map((blog) => (
-            <BlogCard key={blog.id} blog={blog} darkMode={darkMode} />
+          {blogs.map((blog, index) => (
+            <motion.div
+              key={blog.id}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.5, ease: "easeOut" }}
+              whileHover={{ scale: 1.03 }}
+              className="shadow-md hover:shadow-xl transition-shadow duration-300 rounded-2xl"
+            >
+              <BlogCard
+                blog={blog}
+                darkMode={darkMode}
+                onClick={() => {
+                  setSelectedBlog(blog);
+                  setIsBlogModalOpen(true);
+                }}
+              />
+            </motion.div>
           ))}
         </div>
       </section>
+
+
+      {isBlogModalOpen && selectedBlog && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          onClick={() => setIsBlogModalOpen(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.8, y: 50 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.8, y: 50 }}
+            transition={{ type: "spring", damping: 25 }}
+            className={`relative max-w-2xl w-full rounded-2xl overflow-hidden ${darkMode ? "bg-gray-800" : "bg-white"} shadow-xl`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsBlogModalOpen(false)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black bg-opacity-50 text-white"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+
+            <div className="relative h-64 w-full">
+              <img
+                src={selectedBlog.imageUrl || "/default-blog.jpg"}
+                alt={selectedBlog.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+              <div className="absolute bottom-4 left-4 text-white">
+                <h2 className="text-2xl font-bold">{selectedBlog.title}</h2>
+                <div className="flex items-center mt-1">
+                  <span>{selectedBlog.date}</span>
+                  <span className="mx-2">•</span>
+                  <span>{selectedBlog.location}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-4">Blog Content</h3>
+              <p className={`${darkMode ? "text-gray-300" : "text-gray-700"} mb-4`}>
+                {selectedBlog.content || "No content available for this blog post."}
+              </p>
+
+              <div className="mt-6">
+                <h4 className="font-medium mb-2">Author</h4>
+                <div className="flex items-center">
+                  <FaUserCircle className="text-gray-500 mr-2" size={24} />
+                  <span>{selectedBlog.author || "Unknown Author"}</span>
+                </div>
+              </div>
+
+              <button
+                className={`mt-6 w-full py-3 rounded-lg font-medium ${darkMode ? "bg-primary hover:bg-primary-dark" : "bg-navyBlue hover:bg-blue-700"} text-white transition`}
+              >
+                Read Full Article
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+
+
+      {isModalOpen && selectedCollege && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.8, y: 50 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.8, y: 50 }}
+            transition={{ type: "spring", damping: 25 }}
+            className={`relative max-w-2xl w-full rounded-2xl overflow-hidden ${darkMode ? "bg-gray-800" : "bg-white"} shadow-xl`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black bg-opacity-50 text-white"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+
+            <div className="relative h-64 w-full">
+              <img
+                src={selectedCollege.image || "/default-college.jpg"}
+                alt={selectedCollege.name}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+              <div className="absolute bottom-4 left-4 text-white">
+                <h2 className="text-2xl font-bold">{selectedCollege.name}</h2>
+                <div className="flex items-center mt-1">
+                  <FaStar className="text-yellow-400 mr-1" />
+                  <span>{selectedCollege.rating}</span>
+                  <span className="mx-2">•</span>
+                  <span>{selectedCollege.location}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-4">About the College</h3>
+              <p className={`${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                {selectedCollege.description || "No description available for this college."}
+              </p>
+
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium mb-2">Courses Offered</h4>
+                  <ul className="space-y-1">
+                    {(selectedCollege.courses || ["Computer Science", "Engineering"]).map((course, i) => (
+                      <li key={i} className="flex items-center">
+                        <span className="w-2 h-2 rounded-full bg-primary mr-2"></span>
+                        {course}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Facilities</h4>
+                  <ul className="space-y-1">
+                    {(selectedCollege.facilities || ["Library", "Sports Complex", "Hostel"]).map((facility, i) => (
+                      <li key={i} className="flex items-center">
+                        <span className="w-2 h-2 rounded-full bg-primary mr-2"></span>
+                        {facility}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <button
+                className={`mt-6 w-full py-3 rounded-lg font-medium ${darkMode ? "bg-primary hover:bg-primary-dark" : "bg-navyBlue hover:bg-blue-700"} text-white transition`}
+              >
+                Visit College Website
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
 
       <Chatbot darkMode={darkMode} />
       <Footer darkMode={darkMode} />
