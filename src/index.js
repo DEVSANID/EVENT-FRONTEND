@@ -3,8 +3,8 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import "@fontsource/inter";
-import { AuthProvider } from './Components/context/AuthContext'; // ✅ Corrected import path
-import { DarkModeProvider } from "./Components/context/DarkModeContext"; // ✅ Corrected import path 
+import { AuthProvider } from './Components/context/AuthContext';
+import { DarkModeProvider } from "./Components/context/DarkModeContext";
 import { Toaster } from "react-hot-toast";
 import HomePage from './Components/Pages/HomePage';
 import Signup from './Components/Pages/Signup';
@@ -21,23 +21,18 @@ import reportWebVitals from './reportWebVitals';
 import ManageEvents from "./Components/Pages/ManageEvents";
 import ForgotPassword from './Components/Pages/ForgotPassword';
 import ResetPassword from './Components/Pages/ResetPassword';
-import EventDetails from "./Components/Pages/EventDetails"; // ✅ Corrected import path
+import EventDetails from "./Components/Pages/EventDetails";
 import PaymentPage from "./Components/Pages/PaymentPage";
-import BookingSuccess from "./Components/Pages/BookingSuccess"; // ✅ Corrected import path
+import BookingSuccess from "./Components/Pages/BookingSuccess";
 import DashboardTab from './Components/Pages/DashboardTab';
 import EditEvent from "./Components/Pages/EditEvent";
 import ManageVisitors from "./Components/Pages/ManageVisitors";
-import AdminLogin from "./Components/Pages/AdminLogin"; // ✅ Corrected path
-import ProtectedRoute from "./Components/Pages/ProtectedRoute"; // ✅ Corrected path
-import AdminRegister from "./Components/Pages/AdminRegister"; // ✅ Corrected path
-import EventShop from "./Components/Pages/EventShop"; // ✅ Corrected path
+import AdminLogin from "./Components/Pages/AdminLogin";
+import ProtectedRoute from "./Components/Pages/ProtectedRoute";
+import AdminRegister from "./Components/Pages/AdminRegister";
+import EventShop from "./Components/Pages/EventShop";
 import MyOrders from "./Components/Pages/MyOrders";
 import VisitorsSubscribers from './Components/Pages/VisitorsSubscribers';
-
-
-
-
-
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -71,13 +66,9 @@ root.render(
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/shop" element={<EventShop />} />
             <Route path="/my-orders" element={<MyOrders />} />
-            <Route path="/visitors-subscribers" element={<VisitorsSubscribers />} /> 
+            <Route path="/visitors-subscribers" element={<VisitorsSubscribers />} />
             <Route path="/event/:id" element={<EventDetails />} />
-
             <Route element={<ProtectedRoute />}>
-             
-            
-
             </Route>
           </Routes>
         </Router>

@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import Chatbot from "./ChatBot";
 import BlogForm from "./BlogForm";
 import axios from "axios";
+import ReviewsSection from "./ReviewsSection";
 
 // Reusable Event Card Component
 const EventCard = ({ event, darkMode }) => (
@@ -50,7 +51,7 @@ const CollegeCard = ({ college, darkMode, onClick }) => (
   >
     <div className="relative">
       <img
-        src={college.image}
+        src={college.image || "/default-college.jpg"}
         alt={college.name}
         className="w-full h-48 sm:h-56 object-cover rounded-xl"
         onError={(e) => {
@@ -58,15 +59,19 @@ const CollegeCard = ({ college, darkMode, onClick }) => (
         }}
       />
       <span className="absolute top-2 left-2 flex items-center bg-white text-black text-xs font-bold px-2 py-1 rounded-md">
-        <FaStar className="text-yellow-500 mr-1" /> {college.rating}
+        <FaStar className="text-yellow-500 mr-1" /> {college.rating || 4.0}
       </span>
       <span className="absolute top-2 right-2 bg-black text-white text-xs font-bold px-2 py-1 rounded-md">
         EXCLUSIVE
       </span>
     </div>
     <div className="p-4">
-      <h3 className={`text-lg font-semibold ${darkMode ? "text-white" : "text-black"}`}>{college.name}</h3>
-      <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"} mt-1`}>{college.location}</p>
+      <h3 className={`text-lg font-semibold ${darkMode ? "text-white" : "text-black"}`}>
+        {college.name || "Unknown College"}
+      </h3>
+      <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"} mt-1`}>
+        {college.location || "Location not specified"}
+      </p>
       <div className="mt-3 flex justify-end">
         <FaEllipsisH className={`${darkMode ? "text-gray-400" : "text-gray-500"} cursor-pointer`} />
       </div>
@@ -110,7 +115,6 @@ const BlogCard = ({ blog, darkMode, onClick }) => (
   </motion.div>
 );
 
-
 const HomePage = () => {
   const [events, setEvents] = useState([]);
   const [user, setUser] = useState(null);
@@ -134,6 +138,105 @@ const HomePage = () => {
   const [selectedBlog, setSelectedBlog] = useState(null);
   const [isBlogModalOpen, setIsBlogModalOpen] = useState(false);
   const backendBaseURL = "http://localhost:5000";
+  const [reviewText, setReviewText] = useState("");
+  const [rating, setRating] = useState(5);
+  const [reviews, setReviews] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  // const [visibleColleges, setVisibleColleges] = useState(3); // Initial number of colleges to show
+  const [isLoadingColleges, setIsLoadingColleges] = useState(false);
+  const [hasMoreColleges, setHasMoreColleges] = useState(true);
+
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/reviews");
+        setReviews(res.data);
+      } catch (err) {
+        console.error("Error fetching reviews", err);
+      }
+    };
+
+    fetchReviews();
+  }, []);
+
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
+    setSuccess(false);
+
+    // Validate input
+    if (!reviewText.trim()) {
+      setError("Please write your review before submitting");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (reviewText.length < 10) {
+      setError("Review must be at least 10 characters long");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      // Removed unused 'response' variable by destructuring directly
+      await axios.post(
+        "http://localhost:5000/api/reviews",
+        {
+          user: user?.name || "Anonymous",
+          email: user?.email || "visitor@example.com",
+          review: reviewText,
+          rating: Number(rating),
+          // Removed undefined 'eventId' or replace with actual prop if needed
+          targetType: "general", // Changed from undefined 'event'
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      // Update state and show success
+      setSuccess("Thank you for your feedback!");
+      setReviewText("");
+      setRating(5);
+
+      // Refresh reviews - destructured to avoid unused variable
+      const { data } = await axios.get("http://localhost:5000/api/reviews");
+      setReviews(data);
+
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      setError(
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to submit review. Please try again later."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/reviews");
+        setReviews(response.data);
+      } catch (error) {
+        console.error("Error fetching reviews:", error);
+      }
+    };
+
+    fetchReviews();
+  }, []);
+
 
 
 
@@ -269,18 +372,42 @@ const HomePage = () => {
     setVisibleEvents(6);
   }, [searchTerm, events]);
 
-  useEffect(() => {
-    const fetchColleges = async () => {
-      try {
-        const response = await axios.get("http://localhost:5000/api/colleges/trending");
-        setColleges(response.data);
-      } catch (error) {
-        console.error("Error fetching trending colleges:", error);
-      }
-    };
+  // Update the fetchColleges function
+  const fetchColleges = async (limit = 3, skip = 0) => {
+    try {
+      setIsLoadingColleges(true);
+      const response = await axios.get(
+        `http://localhost:5000/api/colleges/trending?limit=${limit}&skip=${skip}`
+      );
 
-    fetchColleges();
+      // Check if we got data and handle accordingly
+      if (response.data && response.data.length > 0) {
+        if (skip === 0) {
+          setColleges(response.data);
+        } else {
+          setColleges(prev => [...prev, ...response.data]);
+        }
+        setHasMoreColleges(response.data.length === limit);
+      } else {
+        setHasMoreColleges(false);
+      }
+    } catch (error) {
+      console.error("Error fetching colleges:", error);
+      setHasMoreColleges(false);
+    } finally {
+      setIsLoadingColleges(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchColleges(3, 0);
   }, []);
+
+  // Load more function
+  const loadMoreColleges = () => {
+    fetchColleges(3, colleges.length);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -342,7 +469,7 @@ const HomePage = () => {
   return (
     <div className={`font-sans ${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"}`}>
       {/* Sticky & Transparent Header */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-white/30 dark:bg-gray-900/30 shadow-md">
+      <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-white/60 dark:bg-gray-900/60 shadow-md border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-[1200px] mx-auto flex justify-between items-center p-4">
           {/* Logo */}
           <Link to="/" className="text-3xl font-bold text-black dark:text-white">
@@ -371,7 +498,7 @@ const HomePage = () => {
 
                 {/* Profile Dropdown */}
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-lg shadow-lg py-2">
+                  <div className="absolute right-0 mt-2 w-56 rounded-lg shadow-lg py-2 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border border-gray-200 dark:border-gray-700">
                     <p className="px-4 py-2 text-sm font-medium text-black dark:text-white">
                       {user.name}
                     </p>
@@ -449,7 +576,6 @@ const HomePage = () => {
                       </div>
                     )}
 
-
                     {/* Logout */}
                     <button
                       onClick={handleLogout}
@@ -479,6 +605,8 @@ const HomePage = () => {
           </div>
         </div>
       </header>
+
+
 
       {/* Hero Section */}
       <section
@@ -649,42 +777,80 @@ const HomePage = () => {
         </div>
       </section>
 
+
       {/* Trending Colleges Section */}
-      <section className={`w-full py-8 sm:py-10 px-4 sm:px-6 ${darkMode ? "bg-gray-900" : "bg-white"}`}>
+      <section className={`w-full py-8 sm:py-10 px-2 sm:px-6 ${darkMode ? "bg-gray-900" : "bg-white"}`}>
         <div className="max-w-6xl mx-auto mb-6">
           <h2 className="text-2xl sm:text-[36px] font-sans font-bold">
             Trending <span className="text-purple-500">colleges</span>
           </h2>
         </div>
 
-        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {colleges.map((college, index) => (
-            <motion.div
-              key={college._id || college.id}
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.5, ease: "easeOut" }}
-              whileHover={{ scale: 1.03 }}
-              className="shadow-md hover:shadow-xl transition-shadow duration-300 rounded-2xl"
-            >
-              <CollegeCard
-                college={college}
-                darkMode={darkMode}
-                onClick={() => handleCollegeClick(college)}
-              />
-            </motion.div>
-          ))}
-        </div>
+        {isLoadingColleges && colleges.length === 0 ? (
+          <div className="flex justify-center" role="status" aria-label="Loading colleges">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+          </div>
+        ) : (
+          <>
+            {/* Filter out duplicates by _id */}
+            {Array.from(new Map(colleges.map(c => [c._id, c])).values()).length > 0 ? (
+              <>
+                <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from(new Map(colleges.map(c => [c._id, c])).values()).map((college, index) => (
+                    <motion.div
+                      key={college._id}
+                      initial={{ opacity: 0, y: 40 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1, duration: 0.5, ease: "easeOut" }}
+                      whileHover={{ scale: 1.03 }}
+                      className={`shadow-md hover:shadow-xl transition-shadow duration-300 rounded-2xl overflow-hidden ${darkMode ? "bg-gray-800" : "bg-white"}`}
+                    >
+                      <CollegeCard
+                        college={college}
+                        darkMode={darkMode}
+                        onClick={() => handleCollegeClick(college)}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
 
-        <div className="max-w-6xl mx-auto mt-8 flex justify-center">
-          <button
-            className="bg-purple-500 text-white px-6 py-2 rounded-md"
-            aria-label="Load more colleges"
-          >
-            Load more...
-          </button>
-        </div>
+                <div className="max-w-6xl mx-auto mt-8 flex justify-center">
+                  {isLoadingColleges ? (
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500" role="status" aria-label="Loading more colleges"></div>
+                  ) : hasMoreColleges ? (
+                    <button
+                      onClick={loadMoreColleges}
+                      aria-label="Load more colleges"
+                      className="bg-purple-500 text-white px-6 py-2 rounded-md hover:bg-purple-600 transition-colors duration-200"
+                    >
+                      Load more colleges
+                    </button>
+                  ) : (
+                    <p className={`${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                      All colleges loaded
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className={`${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                  No trending colleges available at the moment.
+                </p>
+                <button
+                  onClick={fetchColleges}
+                  aria-label="Try fetching colleges again"
+                  className="mt-4 bg-purple-500 text-white px-6 py-2 rounded-md hover:bg-purple-600 transition-colors duration-200"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </section>
+
+
 
       {/* Blog Section */}
       <section className={`w-full py-8 sm:py-10 px-4 sm:px-6 ${darkMode ? "bg-gray-900" : "bg-white"}`}>
@@ -887,7 +1053,109 @@ const HomePage = () => {
         </motion.div>
       )}
 
+
+
+      {/* Review Section */}
+      <section className={`w-full py-10 px-4 sm:px-6 ${darkMode ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6">
+            Share Your <span className="text-primary">Experience</span>
+          </h2>
+
+          {/* Messages Container */}
+          {error && (
+            <div className={`mb-4 p-3 rounded-lg ${darkMode ? "bg-red-900 text-red-100" : "bg-red-100 text-red-800"}`}>
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className={`mb-4 p-3 rounded-lg ${darkMode ? "bg-green-900 text-green-100" : "bg-green-100 text-green-800"}`}>
+              Review submitted successfully!
+            </div>
+          )}
+
+          {/* Review Form */}
+          <div
+            className={`text-left p-6 rounded-2xl shadow-lg ${darkMode ? "bg-gray-800 text-white" : "bg-gray-50 text-gray-900"
+              }`}
+          >
+            {localStorage.getItem("user") ? (
+              <form onSubmit={handleReviewSubmit} className="space-y-4">
+                <textarea
+                  className={`w-full h-28 p-3 rounded-md resize-none border ${darkMode
+                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                    }`}
+                  placeholder="Write your review..."
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  minLength="10"
+                  maxLength="500"
+                  required
+                />
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <label htmlFor="rating" className={`text-sm font-medium ${darkMode ? "text-gray-100" : "text-gray-800"}`}>
+                      Rating:
+                    </label>
+                    <select
+                      id="rating"
+                      className={`p-2 rounded-md border ${darkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                        }`}
+                      value={rating}
+                      onChange={(e) => setRating(e.target.value)}
+                      required
+                    >
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <option
+                          key={num}
+                          value={num}
+                          className={`${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"}`}
+                        >
+                          {num} ⭐
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <span className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    {reviewText.length}/500 characters
+                  </span>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`bg-primary text-white px-6 py-2 rounded-md hover:opacity-90 transition duration-200 ${isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+                    }`}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Review"}
+                </button>
+              </form>
+            ) : (
+              <div className="text-center">
+                <p className={`text-sm font-medium mb-4 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  You must be logged in to write a review.
+                </p>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="bg-primary text-white px-6 py-2 rounded-md hover:opacity-90 transition duration-200"
+                >
+                  Login
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <ReviewsSection reviews={reviews} darkMode={darkMode} />
+
       <Chatbot darkMode={darkMode} />
+
       <Footer darkMode={darkMode} />
     </div>
   );

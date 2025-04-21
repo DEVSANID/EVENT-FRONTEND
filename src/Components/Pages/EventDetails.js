@@ -107,16 +107,81 @@ const EventDetails = () => {
 
   const generatePDF = async (paymentId) => {
     const doc = new jsPDF();
+    
+    // Add background color
+    doc.setFillColor(240, 240, 240);
+    doc.rect(0, 0, doc.internal.pageSize.getWidth(), doc.internal.pageSize.getHeight(), 'F');
+    
+    // Add header with logo and website name
+    doc.setFontSize(20);
+    doc.setTextColor(40, 53, 147);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Event Hive', 105, 20, { align: 'center' });
+    
+    // Add ticket title
     doc.setFontSize(16);
-    doc.text("Ticket Confirmation", 20, 20);
-    doc.setFontSize(12);
-    doc.text(`Event: ${event?.title || "Unknown Event"}`, 20, 30);
-    doc.text(`Name: ${attendee.name}`, 20, 40);
-    doc.text(`Email: ${attendee.email}`, 20, 50);
-    doc.text(`Mobile: ${attendee.mobile}`, 20, 60);
-    doc.text(`Tickets: ${attendee.tickets}`, 20, 70);
-    doc.text(`Amount Paid: ${500 * attendee.tickets}`, 20, 80);
-    doc.text(`Payment ID: ${paymentId}`, 20, 90);
+    doc.setTextColor(0, 0, 0);
+    doc.text('EVENT TICKET', 105, 35, { align: 'center' });
+    
+    // Add divider line
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(20, 40, 190, 40);
+    
+    // Add event details section
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Event Details:', 20, 50);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Title: ${event?.title || 'Unknown Event'}`, 20, 60);
+    doc.text(`Date: ${event?.startDate} ${event?.endDate ? `to ${event.endDate}` : ''}`, 20, 70);
+    doc.text(`Venue: ${event?.venue || 'Not specified'}`, 20, 80);
+    
+    // Add attendee details section
+    doc.setFont('helvetica', 'bold');
+    doc.text('Attendee Information:', 20, 100);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Name: ${attendee.name}`, 20, 110);
+    doc.text(`Email: ${attendee.email}`, 20, 120);
+    doc.text(`Mobile: ${attendee.mobile}`, 20, 130);
+    
+    // Add ticket details section
+    doc.setFont('helvetica', 'bold');
+    doc.text('Ticket Details:', 20, 150);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Number of Tickets: ${attendee.tickets}`, 20, 160);
+    doc.text(`Price per Ticket: ₹500`, 20, 170);
+    doc.text(`Total Amount: ₹${500 * attendee.tickets}`, 20, 180);
+    
+    // Add payment information
+    doc.setFont('helvetica', 'bold');
+    doc.text('Payment Information:', 20, 200);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Payment ID: ${paymentId}`, 20, 210);
+    doc.text(`Booking Date: ${new Date().toLocaleDateString()}`, 20, 220);
+    
+    // Add footer
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Thank you for using Event Hive!', 105, 280, { align: 'center' });
+    doc.text('For any queries, please contact support@eventhive.com', 105, 285, { align: 'center' });
+    
+    // Add QR code placeholder
+    doc.setDrawColor(0, 0, 0);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(140, 90, 50, 50, 'FD');
+    doc.setTextColor(150, 150, 150);
+    doc.setFontSize(8);
+    doc.text('QR Code', 165, 120, { align: 'center' });
+    
+    // Add border around the ticket
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(1);
+    doc.roundedRect(15, 15, 180, 260, 5, 5, 'S');
 
     const base64 = doc.output("datauristring").split(",")[1];
 
@@ -137,7 +202,7 @@ const EventDetails = () => {
 
       if (res.ok && data.ticketPath) {
         const downloadUrl = `http://localhost:5000${data.ticketPath}`;
-        window.open(downloadUrl, '_blank'); // Open in new tab
+        window.open(downloadUrl, '_blank');
       } else {
         console.error("Ticket uploaded but no download path returned.");
       }

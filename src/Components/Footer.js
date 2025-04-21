@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { FaLinkedin, FaInstagram, FaRegCircle } from "react-icons/fa";
 import axios from "axios";
+import FaqModal from "./Pages/FaqModal";
 
 const Footer = ({ darkMode }) => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [name, setName] = useState("");
 
-  // Check if user is logged in by verifying token in localStorage
   useEffect(() => {
-    const token = localStorage.getItem("token"); // Assuming token is stored in localStorage
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
     setIsLoggedIn(!!token);
+    if (user?.name) setName(user.name);
+    if (user?.email) setEmail(user.email); // Optional: Auto-fill email
   }, []);
 
-  const isValidEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubscribe = async () => {
     if (!isLoggedIn) {
@@ -28,6 +30,7 @@ const Footer = ({ darkMode }) => {
       setMessage("Please enter an email.");
       return;
     }
+
     if (!isValidEmail(email)) {
       setMessage("Please enter a valid email address.");
       return;
@@ -38,11 +41,10 @@ const Footer = ({ darkMode }) => {
       const token = localStorage.getItem("token");
       const response = await axios.post(
         "http://localhost:5000/api/visitors/subscribe",
-        { email },
+        { email, name },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(response.data.message);
-      setEmail("");
     } catch (error) {
       setMessage("Subscription failed. Try again.");
       console.error("Error subscribing:", error);
@@ -57,6 +59,7 @@ const Footer = ({ darkMode }) => {
         <h2 className="text-[40px] font-sans font-bold mb-4">
           Event <span className="text-purple-400">Hive</span>
         </h2>
+
         <div className="flex justify-center items-center gap-4 flex-col md:flex-row">
           <div className="flex w-full sm:w-auto max-w-xs md:max-w-none">
             <input
@@ -64,10 +67,11 @@ const Footer = ({ darkMode }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
-              className={`px-4 py-2 rounded-md ${darkMode ? "bg-gray-700 text-white" : "text-black"} w-full sm:w-64 md:w-80 max-w-xs sm:max-w-none border ${
-                email && !isValidEmail(email) ? "border-red-500" : "border-gray-300"
-              }`}
               disabled={!isLoggedIn}
+              className={`px-4 py-2 rounded-md w-full sm:w-64 md:w-80 max-w-xs sm:max-w-none border ${
+                !isLoggedIn ? "bg-gray-300 cursor-not-allowed" :
+                darkMode ? "bg-gray-700 text-white" : "text-black"
+              } ${email && !isValidEmail(email) ? "border-red-500" : "border-gray-300"}`}
             />
             <button
               className={`px-6 py-2 rounded-md text-white font-semibold w-auto md:ml-2 ml-2 ${
@@ -80,17 +84,25 @@ const Footer = ({ darkMode }) => {
             </button>
           </div>
         </div>
-        {message && <p className="text-sm mt-2 text-red-400">{message}</p>}
+
+        {message && (
+          <p className={`text-sm mt-2 ${message.includes("successful") ? "text-green-400" : "text-red-400"}`}>
+            {message}
+          </p>
+        )}
+
         <nav className="mt-6">
           <ul className="flex flex-wrap justify-center gap-3 sm:gap-6 text-sm">
             <li className="cursor-pointer hover:text-purple-300">Home</li>
             <li className="cursor-pointer hover:text-purple-300">About</li>
             <li className="cursor-pointer hover:text-purple-300">Services</li>
             <li className="cursor-pointer hover:text-purple-300">Get in touch</li>
-            <li className="cursor-pointer hover:text-purple-300">FAQs</li>
+            <FaqModal />
           </ul>
         </nav>
+
         <hr className={`${darkMode ? "border-gray-700" : "border-white"} my-3`} />
+
         <div className="flex flex-col md:flex-row items-center justify-between text-sm">
           <div className="flex gap-4 mt-4 md:mt-0">
             <FaLinkedin className="text-xl cursor-pointer hover:text-purple-300" />
@@ -100,6 +112,7 @@ const Footer = ({ darkMode }) => {
           <p className="mt-4 md:mt-0 text-xs">Non Copyrighted © 2023 Upload by EventHive</p>
         </div>
       </div>
+
       <div className="flex gap-2 md:gap-4 justify-center mt-4">
         <button className="bg-purple-500 px-3 py-1 rounded-md text-white text-xs hover:bg-purple-600">
           English

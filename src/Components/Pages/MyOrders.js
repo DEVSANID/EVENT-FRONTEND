@@ -48,7 +48,7 @@ export default function MyOrders() {
       <div className="max-w-6xl mx-auto">
         <h1
           className={`text-4xl font-extrabold text-center mb-10 tracking-wide 
-              text-white drop-shadow-md`}
+              text-black drop-shadow-md`}
         >
           My Orders
         </h1>
